@@ -437,6 +437,16 @@ function subscribeRealtime() {
     .subscribe();
 }
 
+// ---------- 서비스 워커 (PWA) ----------
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch((err) => {
+      console.error('서비스 워커 등록 실패', err);
+    });
+  });
+}
+
 // ---------- 초기화 ----------
 async function init() {
   const savedName = localStorage.getItem('hyedrive_reserver_name');
@@ -445,6 +455,7 @@ async function init() {
   bindEvents();
   await refreshDashboard();
   subscribeRealtime();
+  registerServiceWorker();
 }
 
 document.addEventListener('DOMContentLoaded', init);
