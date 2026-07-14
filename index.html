@@ -15,6 +15,8 @@
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+<div id="offline-banner" class="offline-banner" hidden>오프라인 상태입니다 · 마지막으로 불러온 화면을 보고 있어요</div>
+
 <header class="app-header">
   <div class="header-inner">
     <div class="logo">hye<span>drive</span></div>
@@ -154,6 +156,14 @@
 </div>
 
 <div id="toast-container" class="toast-container"></div>
+
+<div id="install-banner" class="install-banner" hidden>
+  <span id="install-banner-text"></span>
+  <div class="install-banner-actions">
+    <button id="install-banner-action-btn" class="btn btn-primary btn-small" hidden>설치</button>
+    <button id="install-banner-close-btn" class="install-banner-close" aria-label="닫기">&times;</button>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>

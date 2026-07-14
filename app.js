@@ -41,7 +41,19 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
-// ---------- 데이터 로드 ----------
+// ---------- 데이터 로드 (오프라인 시 마지막으로 불러온 데이터로 대체) ----------
+const CACHE_VEHICLES_KEY = 'hyedrive_cache_vehicles';
+const CACHE_RESERVATIONS_KEY = 'hyedrive_cache_reservations';
+
+function readCache(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 async function loadVehicles() {
   const { data, error } = await supabaseClient
     .from('vehicles')
@@ -49,10 +61,18 @@ async function loadVehicles() {
     .order('plate_number', { ascending: true });
   if (error) {
     console.error(error);
-    showToast('차량 정보를 불러오지 못했습니다.', 'error');
+    const cached = readCache(CACHE_VEHICLES_KEY);
+    if (cached) {
+      vehicles = cached;
+      if (navigator.onLine) showToast('차량 정보를 불러오지 못했습니다. 이전 화면을 표시합니다.', 'error');
+    } else {
+      vehicles = [];
+      showToast('차량 정보를 불러오지 못했습니다.', 'error');
+    }
     return;
   }
   vehicles = data || [];
+  localStorage.setItem(CACHE_VEHICLES_KEY, JSON.stringify(vehicles));
 }
 
 async function loadActiveReservations() {
@@ -62,10 +82,18 @@ async function loadActiveReservations() {
     .in('status', ['예약됨', '대여중']);
   if (error) {
     console.error(error);
-    showToast('예약 정보를 불러오지 못했습니다.', 'error');
+    const cached = readCache(CACHE_RESERVATIONS_KEY);
+    if (cached) {
+      activeReservations = cached;
+      if (navigator.onLine) showToast('예약 정보를 불러오지 못했습니다. 이전 화면을 표시합니다.', 'error');
+    } else {
+      activeReservations = [];
+      showToast('예약 정보를 불러오지 못했습니다.', 'error');
+    }
     return;
   }
   activeReservations = data || [];
+  localStorage.setItem(CACHE_RESERVATIONS_KEY, JSON.stringify(activeReservations));
 }
 
 async function refreshDashboard() {
@@ -208,11 +236,13 @@ function openReservationModal(vehicle, startRaw, endRaw) {
   document.getElementById('reservation-form-error').textContent = '';
 
   document.getElementById('reservation-modal').hidden = false;
+  hideInstallBanner(); // 모달이 배너를 가리지 않도록 잠시 숨김
 }
 
 function closeReservationModal() {
   document.getElementById('reservation-modal').hidden = true;
   selectedVehicle = null;
+  if (installBannerMode) showInstallBanner(installBannerMode);
 }
 
 async function handleReservationSubmit(e) {
@@ -447,6 +477,95 @@ function registerServiceWorker() {
   });
 }
 
+// ---------- 오프라인 상태 배너 ----------
+function updateOnlineStatus() {
+  const banner = document.getElementById('offline-banner');
+  if (!banner) return;
+  banner.hidden = navigator.onLine;
+}
+
+function setupOnlineStatus() {
+  updateOnlineStatus();
+  window.addEventListener('online', () => {
+    updateOnlineStatus();
+    refreshDashboard();
+  });
+  window.addEventListener('offline', updateOnlineStatus);
+}
+
+// ---------- 홈 화면에 추가 안내 배너 ----------
+let deferredInstallPrompt = null;
+let installBannerMode = null;
+const INSTALL_DISMISSED_KEY = 'hyedrive_install_dismissed';
+
+function isStandaloneDisplay() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+function isMobileDevice() {
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+function isIOSDevice() {
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+function showInstallBanner(mode) {
+  installBannerMode = mode;
+  if (localStorage.getItem(INSTALL_DISMISSED_KEY) === 'true') return;
+  const banner = document.getElementById('install-banner');
+  const text = document.getElementById('install-banner-text');
+  const actionBtn = document.getElementById('install-banner-action-btn');
+  if (!banner) return;
+
+  if (mode === 'android') {
+    text.textContent = '홈 화면에 추가하고 앱처럼 더 빠르게 이용하세요.';
+    actionBtn.hidden = false;
+  } else {
+    text.textContent = 'Safari 공유 버튼을 누른 뒤 "홈 화면에 추가"를 선택하면 앱처럼 설치할 수 있어요.';
+    actionBtn.hidden = true;
+  }
+  banner.hidden = false;
+}
+
+function hideInstallBanner() {
+  const banner = document.getElementById('install-banner');
+  if (banner) banner.hidden = true;
+}
+
+function dismissInstallBanner() {
+  hideInstallBanner();
+  localStorage.setItem(INSTALL_DISMISSED_KEY, 'true');
+}
+
+function setupInstallPrompt() {
+  if (isStandaloneDisplay() || !isMobileDevice()) return;
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    showInstallBanner('android');
+  });
+
+  window.addEventListener('appinstalled', () => {
+    localStorage.setItem(INSTALL_DISMISSED_KEY, 'true');
+    hideInstallBanner();
+  });
+
+  if (isIOSDevice()) {
+    showInstallBanner('ios');
+  }
+
+  document.getElementById('install-banner-close-btn').addEventListener('click', dismissInstallBanner);
+  document.getElementById('install-banner-action-btn').addEventListener('click', async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    hideInstallBanner();
+  });
+}
+
 // ---------- 초기화 ----------
 async function init() {
   const savedName = localStorage.getItem('hyedrive_reserver_name');
@@ -456,6 +575,8 @@ async function init() {
   await refreshDashboard();
   subscribeRealtime();
   registerServiceWorker();
+  setupOnlineStatus();
+  setupInstallPrompt();
 }
 
 document.addEventListener('DOMContentLoaded', init);

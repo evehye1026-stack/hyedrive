@@ -26,12 +26,24 @@ body {
   color: var(--color-text);
 }
 
+.offline-banner {
+  background: #78350f;
+  color: #fff;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 12px;
+  padding-top: calc(8px + env(safe-area-inset-top));
+}
+.offline-banner[hidden] { display: none; }
+
 .app-header {
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   position: sticky;
   top: 0;
   z-index: 20;
+  padding-top: env(safe-area-inset-top);
 }
 
 .header-inner {
@@ -407,8 +419,77 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* 설치(홈 화면에 추가) 안내 배너 */
+.install-banner {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  background: #1f2937;
+  color: #fff;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  z-index: 150;
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+.install-banner[hidden] { display: none; }
+
+.install-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.install-banner-close {
+  background: none;
+  border: none;
+  color: #fff;
+  opacity: 0.7;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+.install-banner-close:hover { opacity: 1; }
+
 @media (max-width: 640px) {
   .form-row { flex-direction: column; }
   .header-inner { flex-direction: column; align-items: flex-start; }
   .my-res-controls { flex-direction: column; align-items: stretch; }
+
+  /* 탭을 화면 너비에 맞춰 균등하게, 터치 영역을 넓게 */
+  .tabs { width: 100%; }
+  .tab-btn { flex: 1; text-align: center; padding: 10px 12px; }
+
+  /* iOS Safari는 input/select font-size가 16px 미만이면 포커스 시 자동 확대됨 - 방지 */
+  .filter-group input,
+  .filter-group select,
+  .form-group input,
+  .form-group select {
+    font-size: 16px;
+  }
+
+  /* 좁은 화면에서 모달 여백 축소로 콘텐츠 영역 확보 */
+  .modal-overlay { padding: 10px; }
+  .modal { padding: 18px; max-width: none; }
+
+  /* 토스트가 화면 폭을 넘지 않도록 */
+  .toast-container {
+    left: 12px;
+    right: 12px;
+    top: calc(12px + env(safe-area-inset-top));
+  }
+  .toast { max-width: none; }
+
+  /* 버튼 터치 영역 확대 */
+  .btn { padding: 11px 16px; }
+
+  .install-banner { flex-wrap: wrap; }
 }
