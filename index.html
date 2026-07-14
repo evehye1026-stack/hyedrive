@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>hyedrive - 사내 차량 예약</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <div class="logo">hye<span>drive</span></div>
+    <nav class="tabs">
+      <button class="tab-btn active" data-view="dashboard-view">대시보드</button>
+      <button class="tab-btn" data-view="my-reservations-view">내 예약</button>
+    </nav>
+  </div>
+</header>
+
+<main class="app-main">
+
+  <!-- 대시보드 뷰 -->
+  <section id="dashboard-view" class="view">
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label>출발일시</label>
+        <input type="datetime-local" id="filter-start" />
+      </div>
+      <div class="filter-group">
+        <label>반납예정일시</label>
+        <input type="datetime-local" id="filter-end" />
+      </div>
+      <div class="filter-group">
+        <label>부서(관리)</label>
+        <select id="filter-department">
+          <option value="">전체</option>
+          <option value="총무팀">총무팀</option>
+          <option value="개발팀">개발팀</option>
+          <option value="마케팅팀">마케팅팀</option>
+          <option value="인사팀">인사팀</option>
+          <option value="경영지원팀">경영지원팀</option>
+          <option value="영업팀">영업팀</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>연료</label>
+        <select id="filter-fuel">
+          <option value="">전체</option>
+          <option value="가솔린">가솔린</option>
+          <option value="디젤">디젤</option>
+          <option value="하이브리드">하이브리드</option>
+          <option value="전기">전기</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>정원(이상)</label>
+        <input type="number" id="filter-capacity" min="1" placeholder="예: 5" />
+      </div>
+      <div class="filter-group">
+        <label>상태</label>
+        <select id="filter-status">
+          <option value="">전체</option>
+          <option value="운행가능">운행가능</option>
+          <option value="운행중">운행중</option>
+          <option value="정비중">정비중</option>
+        </select>
+      </div>
+      <div class="filter-group filter-actions">
+        <button id="filter-reset-btn" class="btn btn-secondary">필터 초기화</button>
+      </div>
+    </div>
+
+    <p class="hint-text">이용 희망 일시를 입력하면 해당 시간대에 예약 가능한 "빈 차량"이 강조 표시됩니다.</p>
+
+    <div id="vehicle-grid" class="vehicle-grid">
+      <p class="loading-text">차량 정보를 불러오는 중...</p>
+    </div>
+  </section>
+
+  <!-- 내 예약 뷰 -->
+  <section id="my-reservations-view" class="view" hidden>
+    <div class="my-res-controls">
+      <div class="filter-group">
+        <label>예약자명</label>
+        <input type="text" id="my-name-input" placeholder="이름을 입력하세요" />
+      </div>
+      <button id="my-name-search-btn" class="btn btn-primary">조회</button>
+    </div>
+    <div id="my-reservations-list" class="my-reservations-list">
+      <p class="loading-text">이름을 입력하고 조회 버튼을 눌러주세요.</p>
+    </div>
+  </section>
+
+</main>
+
+<!-- 예약 모달 -->
+<div id="reservation-modal" class="modal-overlay" hidden>
+  <div class="modal">
+    <button class="modal-close-btn" id="modal-close-btn">&times;</button>
+    <h2>차량 예약</h2>
+
+    <div class="vehicle-summary" id="vehicle-summary"></div>
+
+    <form id="reservation-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label>출발일시</label>
+          <input type="datetime-local" id="res-start" required />
+        </div>
+        <div class="form-group">
+          <label>반납예정일시</label>
+          <input type="datetime-local" id="res-end" required />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>예약자명</label>
+          <input type="text" id="res-name" required />
+        </div>
+        <div class="form-group">
+          <label>부서</label>
+          <select id="res-department" required>
+            <option value="" disabled selected>선택</option>
+            <option value="총무팀">총무팀</option>
+            <option value="개발팀">개발팀</option>
+            <option value="마케팅팀">마케팅팀</option>
+            <option value="인사팀">인사팀</option>
+            <option value="경영지원팀">경영지원팀</option>
+            <option value="영업팀">영업팀</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>대여목적</label>
+        <input type="text" id="res-purpose" placeholder="예: 거래처 미팅" required />
+      </div>
+
+      <div class="form-error" id="reservation-form-error"></div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" id="modal-cancel-btn">취소</button>
+        <button type="submit" class="btn btn-primary" id="reservation-submit-btn">예약 확정</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
